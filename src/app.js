@@ -88,6 +88,22 @@ async function asyncApp() {
 
     ws.on("open", () => {
       console.log("websocket connected");
+      
+      // Subscribe to the depth data and ticker streams
+      const subscriptionMessage = JSON.stringify({
+        method: 'SUBSCRIBE',
+        params: [
+          'btcusdt@depth',
+          'ethusdt@depth',
+          'bnbusdt@depth',
+          'btcusdt@ticker',
+          'ethusdt@ticker',
+          'bnbusdt@ticker'
+        ],
+        id: 1
+      });
+
+      ws.send(subscriptionMessage);
     });
 
     ws.on("error", err => {
@@ -102,36 +118,54 @@ async function asyncApp() {
     ws.on("message", data => {
       // parse raw data
       const parsedData = JSON.parse(data);
-      const stream = parsedData.stream.toLowerCase();
+      const stream = parsedData.stream?.toLowerCase();
 
-      // update inMemoryOrderBook
-      for (let i = 0; i <= utils.pairs.length - 1; i++) {
-        if (stream.includes(utils.pairs[i].toLowerCase())) {
-          const updatedPair = utils.updateMemoryOrderBook(
-            inMemoryOrderBook,
-            parsedData
-          );
+      // Check the stream field to determine which type of data the message is for
+      if (stream?.endsWith('@depth')) {
+        // Depth data update
+        // update inMemoryOrderBook
+        for (let i = 0; i <= utils.pairs.length - 1; i++) {
+          if (stream.includes(utils.pairs[i].toLowerCase())) {
+            const updatedPair = utils.updateMemoryOrderBook(
+              inMemoryOrderBook,
+              parsedData
+            );
 
-          if (updatedPair != null) {
-            inMemoryOrderBook[utils.pairs[i]] = {
-              ...updatedPair[utils.pairs[i]]
-            };
+            if (updatedPair != null) {
+              inMemoryOrderBook[utils.pairs[i]] = {
+                ...updatedPair[utils.pairs[i]]
+              };
+            }
+            break;
           }
-          break;
+        }
+
+        const copyOfOrderBook = utils.copyOrderBook(inMemoryOrderBook);
+        const topOrders = utils.getTopOrders(copyOfOrderBook);
+        const response = {
+          result: {
+            bids: topOrders[usingPair]?.bids,
+            asks: topOrders[usingPair]?.asks
+          }
+        }
+
+        // broadcast inMemoryOrderBook to clients
+        io.emit('message', ['pair-info', response]);
+      } else if (stream?.endsWith('@ticker')) {
+        // Ticker data update
+        if (stream.includes(usingPair)) {
+          const response = {
+            result: {
+              high_price: parsedData.data.h,
+              low_price: parsedData.data.l,
+              price_change: parsedData.data.p,
+              volume: parsedData.data.v,
+            }
+          }
+
+          io.emit('message', ['pair-extra', response]);
         }
       }
-
-      const copyOfOrderBook = utils.copyOrderBook(inMemoryOrderBook);
-      const topOrders = utils.getTopOrders(copyOfOrderBook);
-      const response = {
-        result: {
-          bids: topOrders[usingPair]?.bids,
-          asks: topOrders[usingPair]?.asks
-        }
-      }
-
-      // broadcast inMemoryOrderBook to clients
-      io.emit('message', ['pair-info', response]);
     });
     
     ws.on("ping", () => {
