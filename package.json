@@ -1,5 +1,5 @@
 {
-  "name": "binance-market-info-api",
+  "name": "binanceAPI-order-book-server",
   "version": "1.0.0",
   "description": "",
   "main": "./src/app.js",
