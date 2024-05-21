@@ -163,6 +163,7 @@ async function asyncApp() {
             }
           }
 
+          // broadcast market data directly to clients
           io.emit('message', ['pair-extra', response]);
         }
       }
