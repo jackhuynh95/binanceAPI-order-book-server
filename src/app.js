@@ -31,6 +31,8 @@ morgan.token("body", (req, res) => {
 
 // create server
 const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
 // apply middlewares
 app.use(express.json());
@@ -60,6 +62,26 @@ async function asyncApp() {
       inMemoryOrderBook[pair].bids = parsedQuery.bids;
       inMemoryOrderBook[pair].asks = parsedQuery.asks;
     }
+
+    // using pair
+    let usingPair = '';
+
+    // create and run the serversocket in the background
+    io.on('connection', (socket) => {
+      console.log('a user connected');
+      
+      socket.on('message', ([type, payload]) => {
+        switch (type) {
+          case 'pair-token':
+            usingPair = payload;
+            break;
+        }
+      });
+
+      socket.on('disconnect', () => {
+        console.log('user disconnected');
+      });
+    });
 
     // create and run the websocket in the background.
     const ws = new WebSocket(utils.wsStringMulti);
@@ -98,8 +120,20 @@ async function asyncApp() {
           break;
         }
       }
-    });
 
+      const copyOfOrderBook = utils.copyOrderBook(inMemoryOrderBook);
+      const topOrders = utils.getTopOrders(copyOfOrderBook);
+      const response = {
+        result: {
+          bids: topOrders[usingPair]?.bids,
+          asks: topOrders[usingPair]?.asks
+        }
+      }
+
+      // broadcast inMemoryOrderBook to clients
+      io.emit('message', ['pair-info', response]);
+    });
+    
     ws.on("ping", () => {
       console.log("received ping from websocket server");
       ws.pong();
@@ -129,7 +163,7 @@ async function asyncApp() {
       });
     });
 
-    app.listen(PORT, () => {
+    http.listen(PORT, () => {
       console.log(`listening on port: ${PORT}`);
     });
   } catch (err) {
