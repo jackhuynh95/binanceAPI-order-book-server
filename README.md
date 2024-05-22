@@ -87,3 +87,31 @@ curl localhost:3001/api/v1/eff-price/btcusdt-sell-200?limit=20198
 ```
 {"result":"Order query outside of range of current orderbook"}
 ```
+
+# SOCKET
+
+## Get top bids and asks for a given pair
+### Request
+
+```
+io.emit('message', ['pair-token', pair]);
+```
+
+### Response
+
+```
+io.on('message', ['pair-info', {"result":{"bids":"[[\"20216.69000000\",\"0.00888000\"],[\"20216.68000000\",\"0.02775000\"],[\"20215.89000000\",\"0.00269000\"],[\"20215.88000000\",\"0.08148000\"],[\"20215.87000000\",\"0.10247000\"]]","asks":"[[\"20211.25000000\",\"0.01827000\"],[\"20211.32000000\",\"0.00000000\"],[\"20211.38000000\",\"0.01100000\"],[\"20211.39000000\",\"0.76687000\"],[\"20211.91000000\",\"0.00000000\"]]"}}]);
+```
+
+## Get 24-hour price change and volume for a given pair
+### Request
+
+```
+io.emit('message', ['pair-token', pair]);
+```
+
+### Response
+
+```
+io.on('message', ['pair-extra', {"result": "high_price": "...", low_price": "...", price_change": "...", volume": "..." }]);
+```
