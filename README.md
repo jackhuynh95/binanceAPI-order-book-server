@@ -6,7 +6,7 @@ The following is a REST API build using nodejs and expressjs, it uses websocket 
 * `/api/v1/eff-price/:pairName-:opType-:amount?limit={LIMIT}` > Given a pair name, operation type and amount to trade this endpoint returns the effective price. If a 'limit' value is specified it retrieves the maximum order size that can be executed.
 
 And The SOCKET server exposes the following events:
-* `pair-token` > Save the specified pair for the top bids and asks.
+* `pair-token` > Give the specified pair for the top bids and asks.
 * `pair-info` > Returns the top bids and asks for the specified pair.
 * `pair-extra` > Returns the 24-hour price change and volume for the specified pair.
 
