@@ -30,11 +30,18 @@ morgan.token("body", (req, res) => {
 });
 
 // create server
+const cors = require('cors');
 const app = express();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+  cors: {
+    origin: '*',
+  }
+});
 
 // apply middlewares
+app.use(cors())
+app.options('*', cors());
 app.use(express.json());
 app.use(helmet());
 app.use(
